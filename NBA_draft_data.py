@@ -6,75 +6,98 @@ import configparser
 Config = configparser.ConfigParser()
 Config.read("bball.ini")
 bball_ref_url = Config.get("Stats", "Url")
-draft_preview_url = bball_ref_url + Config.get("Stats", "DraftPath")
+draft_path = Config.get("Stats", "DraftPath")
+
+#only get the first 30 picks (round 1) of the draft 1-indexed
 num_rd1_picks = 31
+#dict to hold team info
 teams = {}
 
+curr_draft_url = bball_ref_url + draft_path + Config.get("Stats", "CurrentDraft")
+draft_urls = [curr_draft_url]
+for i in range(5):
+	draft_urls.append(bball_ref_url + Config.get("Stats", "DraftPath") + Config.get("Stats", "PastDraftPrefix") + str(2017-i) + ".html")
+
 parser = et.HTMLParser()
-with urlopen(draft_preview_url) as f:
-	tree = et.parse(f, parser)
 
-#bball-ref draft preview source code has the entire html blocked as a comment
-#need to get the comment block and then reparse as html
-c = html.tostring(tree.xpath('//*[@id="all_picks"]/comment()')[0], method="text")
-c_tree = et.HTML(c, parser)
-print("getting first round team order")
-for i in range(1,num_rd1_picks):
-	pick_num = c_tree.xpath('//*[@id="picks"]/tbody[1]/tr['+str(i)+']/td[1]/a/text()')[0]
-	team = c_tree.xpath('//*[@id="picks"]/tbody[1]/tr['+str(i)+']/td[2]/a/text()')[0]
-	team_link = c_tree.xpath('//*[@id="picks"]/tbody[1]/tr['+str(i)+']/td[2]/a/@href')[0]
-	teams[str(pick_num)] = {'team_name':team,'team_link':team_link}
+#get team rank info
+for d_i, draft_i in enumerate(draft_urls):
+	with urlopen(draft_i) as f:
+		tree = et.parse(f, parser)
+	if d_i == 0:
+		#current draft source code has the entire html blocked as a comment
+		#need to get the comment block and then reparse as html
+		c = html.tostring(tree.xpath('//*[@id="all_picks"]/comment()')[0], method="text")
+		tree = et.HTML(c, parser)
+		xpath_pre = '//*[@id="picks"]/tbody[1]/tr['
+		pick_num_suff = ']/td[1]/a/text()'
+		team_name_suff = ']/td[2]/a/text()'
+		team_link_suff = ']/td[2]/a/@href'
+	else:
+		xpath_pre = '//*[@id="stats"]/tbody/tr['
+		pick_num_suff = ']/td[1]/a/text()'
+		team_name_suff = ']/td[2]/a/@title'
+		team_link_suff = ']/td[2]/a/@href'
+		# print("getting first round team order")
+	for i in range(1, num_rd1_picks):
+		pick_num = tree.xpath(xpath_pre + str(i) + pick_num_suff)[0]
+		team = tree.xpath(xpath_pre + str(i) + team_name_suff)[0]
+		team_link = tree.xpath(xpath_pre + str(i) + team_link_suff)[0]
+		teams[str(pick_num)] = {'team_name':team,'team_link':team_link}
 
-team_ranks_url = Config.get("Stats", "TeamStatRanks")
-team_ranks = {}
-#3pa:18, 3p%:19, 2pa:21, 2p%:22, fta:24, ft%:25, orb:26, drb:27, ast:29, stl:30, blk:31, pts:34
-#//*[@id="stats"]/thead/tr/th[18]
-print("getting team season rankings")
-for k, d in teams.items():
-	team_info = d['team_link'].split('/')
-	real_abbr = team_info[2]
-	team_abbr = 'NJN' if team_info[2] == 'BRK' else team_info[2]
-	team_path = "/" + team_info[1] + "/" + team_abbr
-	team_link = bball_ref_url + team_path + team_ranks_url
-	team_key = d['team_name'] + " (" + real_abbr + ")"
-	if not team_key in team_ranks:
-		print("obtaining " + real_abbr + "'s rankings")
-		with urlopen(team_link) as r:
-			r_tree = et.parse(r, parser)
+	team_ranks_url = Config.get("Stats", "TeamStatRanks")
+	team_ranks = {}
+	#3pa:18, 3p%:19, 2pa:21, 2p%:22, fta:24, ft%:25, orb:26, drb:27, ast:29, stl:30, blk:31, pts:34
+	#//*[@id="stats"]/thead/tr/th[18]
+	# print("getting team season rankings")
+	for k, d in teams.items():
+		team_info = d['team_link'].split('/')
+		real_abbr = team_info[2]
+		team_abbr = 'NJN' if team_info[2] == 'BRK' else team_info[2]
+		team_path = "/" + team_info[1] + "/" + team_abbr
+		team_link = bball_ref_url + team_path + team_ranks_url
+		team_key = d['team_name'] + " (" + real_abbr + ")"
+		if not team_key in team_ranks:
+			print("obtaining " + real_abbr + "'s rankings")
+			with urlopen(team_link) as r:
+				r_tree = et.parse(r, parser)
 
-		#use //text() because bball-ref nests a <span> for rank 1s so we need to just get the deepest child's text
-		r_3pa = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[17]//text()')[0]
-		r_3pp = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[18]//text()')[0]
-		r_2pa = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[20]//text()')[0]
-		r_2pp = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[21]//text()')[0]
-		r_fta = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[23]//text()')[0]
-		r_ftp = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[24]//text()')[0]
-		r_orb = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[25]//text()')[0]
-		r_drb = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[26]//text()')[0]
-		r_ast = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[28]//text()')[0]
-		r_stl = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[29]//text()')[0]
-		r_blk = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[30]//text()')[0]
-		r_pts = r_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[33]//text()')[0]
+			#use //text() because bball-ref nests a <span> for rank 1s so we need to just get the deepest child's text
+			r_3pa = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[17]//text()')[0]
+			r_3pp = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[18]//text()')[0]
+			r_2pa = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[20]//text()')[0]
+			r_2pp = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[21]//text()')[0]
+			r_fta = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[23]//text()')[0]
+			r_ftp = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[24]//text()')[0]
+			r_orb = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[25]//text()')[0]
+			r_drb = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[26]//text()')[0]
+			r_ast = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[28]//text()')[0]
+			r_stl = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[29]//text()')[0]
+			r_blk = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[30]//text()')[0]
+			r_pts = r_tree.xpath('//*[@id="stats"]/tbody/tr[' + str(d_i + 1) + ']/td[33]//text()')[0]
 
-		team_ranks[team_key] = {'3pa':r_3pa,
-								'3pp':r_3pp,
-								'2pa':r_2pa,
-								'2pp':r_2pp,
-								'fta':r_fta,
-								'ftp':r_ftp,
-								'orb':r_orb,
-								'drb':r_drb,
-								'ast':r_ast,
-								'stl':r_stl,
-								'blk':r_blk,
-								'pts':r_pts}
+			team_ranks[team_key] = {'3pa':r_3pa,
+									'3pp':r_3pp,
+									'2pa':r_2pa,
+									'2pp':r_2pp,
+									'fta':r_fta,
+									'ftp':r_ftp,
+									'orb':r_orb,
+									'drb':r_drb,
+									'ast':r_ast,
+									'stl':r_stl,
+									'blk':r_blk,
+									'pts':r_pts}
 
-with open('2017-18 Draft Team Ranks.csv', 'w+') as team_file:
-	for k, d in team_ranks.items():
-		team_file.write(k + ",")
-		team_file.write(",".join(list(d.values())))
-		team_file.write("\n")
-team_file.close()
+	save_name = str(2018-d_i) + 'Draft Team Ranks.csv'
+	with open(save_name, 'w+') as team_file:
+		for k, d in team_ranks.items():
+			team_file.write(k + ",")
+			team_file.write(",".join(list(d.values())))
+			team_file.write("\n")
+	team_file.close()
+
+#end draft team ranks loop
 
 #prospect pre-nba stats
 num_prospects = 50
