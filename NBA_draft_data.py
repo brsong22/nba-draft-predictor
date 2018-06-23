@@ -89,7 +89,7 @@ for d_i, draft_i in enumerate(draft_urls):
 									'blk':r_blk,
 									'pts':r_pts}
 
-	save_name = str(2018-d_i) + 'Draft Team Ranks.csv'
+	save_name = str(2018-d_i) + ' Draft Team Ranks.csv'
 	with open(save_name, 'w+') as team_file:
 		for k, d in team_ranks.items():
 			team_file.write(k + ",")
@@ -106,7 +106,7 @@ p = html.tostring(tree.xpath('//*[@id="all_prospects"]/comment()')[0], method="t
 p_tree = et.HTML(p, parser)
 
 #get prospects and stats link
-for p in range(1,num_prospects):
+for p in range(1, num_prospects):
 	prosp_name = p_tree.xpath('//*[@id="prospects"]/tbody/tr[' + str(p) + ']/td[1]//text()')[0]
 	prosp_link = p_tree.xpath('//*[@id="prospects"]/tbody/tr[' + str(p) + ']/td[1]//@href')
 	prosp_link = prosp_link[0] if len(prosp_link) > 0 else ""
