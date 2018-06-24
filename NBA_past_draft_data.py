@@ -2,9 +2,7 @@ from lxml import etree as et
 from lxml import html
 import urllib.request
 from datetime import datetime
-from slugify import slugify
 import configparser
-import regex as re
 
 cfg = configparser.ConfigParser()
 cfg.read("draft_predict.ini")
@@ -19,13 +17,7 @@ for i in range(5):
 num_rd1_picks = list(range(1, 31))
 
 draft_board = {}
-# try:
-# with urllib.request.urlopen('https://www.basketball-reference.com/euro/players/terrance-ferguson-1.html') as test:
-	# print(test.getcode())
-# except urllib.error.HTTPError as e:
-# 	print(e.code)
-	
-# exit()
+
 parser = et.HTMLParser()
 for year_i, draft_url in enumerate(prev_draft_urls):
 	with urllib.request.urlopen(draft_url) as draft_html:
@@ -37,9 +29,10 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 		draft_pick_team_abbr = 'NJN' if draft_pick_team_abbr == 'BRK' else draft_pick_team_abbr
 		draft_pick_team_abbr = 'NOH' if draft_pick_team_abbr == 'NOP' else draft_pick_team_abbr
 		draft_pick_team_abbr = 'CHA' if draft_pick_team_abbr == 'CHO' else draft_pick_team_abbr #typo on the webpage
+		draft_pick_team_abbr = 'CHA' if draft_pick_team_abbr == 'CHH' else draft_pick_team_abbr #charlotte hornets team re-name
 		draft_pick_team_name = draft.xpath('//*[@id="stats"]/tbody/tr[' + str(pick_num) + ']/td[2]/a/@title')[0]
 		team_link = nba_url + cfg.get("Teams", "TeamPath") + "/" + draft_pick_team_abbr + cfg.get("Teams", "TeamStatRanksPage")
-		print(team_link)
+		print(str(prev_year - year_i) + draft_pick_team_abbr)
 		with urllib.request.urlopen(team_link) as stats_html:
 			team_stats = et.parse(stats_html, parser)
 		rank_3pa = team_stats.xpath('//*[@id="stats"]/tbody/tr[' + str(year_i + 1) + ']/td[17]//text()')[0]
@@ -58,89 +51,92 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 		#get player info
 		prospect_stats = {}
 		draft_pick_player_name = draft.xpath('//*[@id="stats"]/tbody/tr[' + str(pick_num) + ']/td[3]/a/text()')[0]
-		player_name_arr = draft_pick_player_name.split(" ")
-		print(player_name_arr)
-		for i, n in enumerate(player_name_arr):
-			player_name_arr[i] = re.sub(r'[^a-zA-Z0-9\-]+', '', n)
-		print(player_name_arr)
-		player_name_clean = slugify("-".join(player_name_arr))
-		player_euro_url = nba_url + cfg.get("Players", "EuroPath") + "/" + player_name_clean + "-1" + cfg.get("Base", "FileExt")
-		player_cbb_url = cbb_url + cfg.get("Players", "CbbPath") + "/" + player_name_clean + "-1" + cfg.get("Base", "FileExt")
-		euro = False
-		print(draft_pick_player_name)
-		print(player_euro_url)
-		print(player_cbb_url)
-		try:
-			with urllib.request.urlopen(player_euro_url) as eu:
-				print("euro")
-				player_url = player_euro_url
+		pick_player_ref_link = nba_url + draft.xpath('//*[@id="stats"]/tbody/tr[' + str(pick_num) + ']/td[3]/a/@href')[0]
+		with urllib.request.urlopen(pick_player_ref_link) as player_html:
+			player_page = et.parse(player_html, parser)
+		player_link_ele = player_page.xpath('//*[@id="inner_nav"]/ul/li[2]/div/ul[8]/li/a/@href')
+		if len(player_link_ele) > 0:
+			player_am_link = player_link_ele[0]
+			if "euro" in player_am_link.split("/"):
 				euro = True
-		except urllib.error.HTTPError as e:
-			print("not euro")
-			try:
-				with urllib.request.urlopen(player_cbb_url) as us:
-					print("us")
-					player_url = player_cbb_url
-			except urllib.error.HTTPError as e:
-				print("not us")
-				player_url = ""
-		print(player_url)
-		if not player_url == "":
-			with urllib.request.urlopen(player_url) as player_stats_html:
+			else:
+				if "gleague" in player_am_link.split("/"):
+					minor_team = cfg.get("Teams", "Minor_Team")
+					gleague = True
+				else:
+					minor_team = cfg.get("Teams", "Cbb_Team")
+					gleague = False
+				euro = False
+		else:
+			player_am_link = ""
+		if not player_am_link == "":
+			with urllib.request.urlopen(player_am_link) as player_stats_html:
 				player_stats = et.parse(player_stats_html, parser)
 			if euro:
-				if player_stats.xpath('//*[@id="per_gameEUR0"]/thead/tr/th[2]/text()'):
-					p_3pa = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[10]/text()')[0]
-					p_3pp = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[11]/text()')[0]
-					p_2pa = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[13]/text()')[0]
-					p_2pp = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[14]/text()')[0]
-					p_fta = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[16]/text()')[0]
-					p_ftp = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[17]/text()')[0]
-					p_orb = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[18]/text()')[0]
-					p_drb = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[19]/text()')[0]
-					p_ast = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[21]/text()')[0]
-					p_stl = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[22]/text()')[0]
-					p_blk = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[23]/text()')[0]
-					p_pts = player_stats.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[26]/text()')[0]
+				print("getting euro player: " + draft_pick_player_name)
+				euro_stat_columns = [7, 8, 10, 11, 13, 14, 15, 16, 18, 19, 20, 23]
+				base_num_stat_cols = 24
+				club = player_stats.xpath('//*[@id="' + cfg.get("Teams", "Club_Club") + '"]/thead/tr/th')
+				euro = player_stats.xpath('//*[@id="' + cfg.get("Teams", "Club_Euro") + '"]/thead/tr/th')
+				euroclub = player_stats.xpath('//*[@id="' + cfg.get("Teams", "Club_All") + '"]/thead/tr/th')
+				if len(club) > 0:
+					tbl_id = cfg.get("Teams", "Club_Club")
+					euro_extra_cols = len(club) - base_num_stat_cols
+				elif len(euro) > 0:
+					tbl_id = cfg.get("Teams", "Club_Euro")
+					euro_extra_cols = len(euro) - base_num_stat_cols
+				elif len(euroclub) > 0:
+					tbl_id = cfg.get("Teams", "Club_All")
+					euro_extra_cols = len(euroclub) - base_num_stat_cols
+				p_3pa = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[0] + euro_extra_cols) + ']/text()')[0]
+				if(float(p_3pa) > 0):
+					p_3pp = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[1] + euro_extra_cols) + ']/text()')[0]
 				else:
-					p_3pa = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[9]/text()')[0]
-					p_3pp = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[10]/text()')[0]
-					p_2pa = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[12]/text()')[0]
-					p_2pp = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[13]/text()')[0]
-					p_fta = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[15]/text()')[0]
-					p_ftp = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[16]/text()')[0]
-					p_orb = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[17]/text()')[0]
-					p_drb = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[18]/text()')[0]
-					p_ast = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[20]/text()')[0]
-					p_stl = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[21]/text()')[0]
-					p_blk = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[22]/text()')[0]
-					p_pts = player_stats.xpath('//*[@id="per_gameALL0"]/tfoot/tr/td[25]/text()')[0]
+					p_3pp = 'n/a'
+				p_2pa = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[2] + euro_extra_cols) + ']/text()')[0]
+				p_2pp = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[3] + euro_extra_cols) + ']/text()')[0]
+				p_fta = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[4] + euro_extra_cols) + ']/text()')[0]
+				p_ftp = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[5] + euro_extra_cols) + ']/text()')[0]
+				p_orb = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[6] + euro_extra_cols) + ']/text()')[0]
+				p_drb = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[7] + euro_extra_cols) + ']/text()')[0]
+				p_ast = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[8] + euro_extra_cols) + ']/text()')[0]
+				p_stl = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[9] + euro_extra_cols) + ']/text()')[0]
+				p_blk = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[10] + euro_extra_cols) + ']/text()')[0]
+				p_pts = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[11] + euro_extra_cols) + ']/text()')[0]
 			else:
-				player_3pa = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[13]//text()')[0]
-				player_3pp = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[14]//text()')[0]
-				player_2pa = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[10]//text()')[0]
-				player_2pp = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[11]//text()')[0]
-				player_fta = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[16]//text()')[0]
-				player_ftp = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[17]//text()')[0]
-				player_orb = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[18]//text()')[0]
-				player_drb = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[19]//text()')[0]
-				player_ast = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[21]//text()')[0]
-				player_stl = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[22]//text()')[0]
-				player_blk = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[23]//text()')[0]
-				player_pts = player_stats.xpath('//*[@id="players_per_game"]/tfoot/tr/td[26]//text()')[0]
+				print("getting usa player: " + draft_pick_player_name)
+				cbb_stat_cols = [13, 14, 10, 11, 16, 17, 18, 19, 21, 22, 23, 26]
+				if gleague:
+					cbb_stat_cols = [x-1 for x in cbb_stat_cols]
+				player_3pa = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[0])+ ']//text()')[0]
+				if(float(player_3pa) > 0):
+					player_3pp = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[1])+ ']//text()')[0]
+				else:
+					player_3pp = 'n/a'
+				player_2pa = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[2])+ ']//text()')[0]
+				player_2pp = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[3])+ ']//text()')[0]
+				player_fta = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[4])+ ']//text()')[0]
+				player_ftp = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[5])+ ']//text()')[0]
+				player_orb = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[6])+ ']//text()')[0]
+				player_drb = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[7])+ ']//text()')[0]
+				player_ast = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[8])+ ']//text()')[0]
+				player_stl = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[9])+ ']//text()')[0]
+				player_blk = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[10]) + ']//text()')[0]
+				player_pts = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[11]) + ']//text()')[0]
 		else:
-			player_3pa = '0'
-			player_3pp = '0'
-			player_2pa = '0'
-			player_2pp = '0'
-			player_fta = '0'
-			player_ftp = '0'
-			player_orb = '0'
-			player_drb = '0'
-			player_ast = '0'
-			player_stl = '0'
-			player_blk = '0'
-			player_pts = '0'
+			print("no stats for player: " + draft_pick_player_name)
+			player_3pa = 'n/a'
+			player_3pp = 'n/a'
+			player_2pa = 'n/a'
+			player_2pp = 'n/a'
+			player_fta = 'n/a'
+			player_ftp = 'n/a'
+			player_orb = 'n/a'
+			player_drb = 'n/a'
+			player_ast = 'n/a'
+			player_stl = 'n/a'
+			player_blk = 'n/a'
+			player_pts = 'n/a'
 		prospect_stats[draft_pick_player_name] = {'3pa': player_3pa,
 												  '3pp': player_3pp,
 												  '2pa': player_2pa,
