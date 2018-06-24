@@ -46,12 +46,12 @@ for t_key, t_values in team_draft_order.items():
 	team_abbr = 'NOH' if team_info[2] == 'NOP' else team_abbr
 	team_path = "/" + team_info[1] + "/" + team_abbr
 	team_link = nba_url + team_path + team_ranks_url
-	team_key = t_values['team_name'] + " (" + real_abbr + ")"
+	team_key = t_values['team_name']
 	if not team_key in team_stat_ranks:
 		# print("obtaining " + real_abbr + "'s rankings")
+		print(team_link)
 		with urlopen(team_link) as r:
 			stat_rank_tree = et.parse(r, parser)
-		print(team_link)
 		#use //text() because bball-ref nests a <span> for rank 1s so we need to just get the deepest child's text
 		rank_3pa = stat_rank_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[17]//text()')[0]
 		rank_3pp = stat_rank_tree.xpath('//*[@id="stats"]/tbody/tr[1]/td[18]//text()')[0]
@@ -81,9 +81,9 @@ for t_key, t_values in team_draft_order.items():
 
 save_name = str(curr_year) + '_Draft Team Stats Ranks.csv'
 with open(save_name, 'w+') as team_file:
-	for t_name, t_stats in team_stat_ranks.items():
-		team_file.write(t_name + ",")
-		team_file.write(",".join(list(t_stats.values())))
+	for pick, t_info in team_draft_order.items():
+		team_file.write(pick + "," + t_info['team_name'])
+		team_file.write(",".join(list(team_stat_ranks[t_info['team_name']].values())))
 		team_file.write("\n")
 team_file.close()
 
