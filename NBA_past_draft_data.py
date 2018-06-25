@@ -19,8 +19,6 @@ num_rd1_picks = list(range(1, 31))
 draft_board = {}
 prospect_stats = {}
 
-with open('[' + str(prev_year - year_i) + '] Team Draft Order and Stats.csv', 'w') as team_file:
-
 parser = et.HTMLParser()
 for year_i, draft_url in enumerate(prev_draft_urls):
 	with urllib.request.urlopen(draft_url) as draft_html:
