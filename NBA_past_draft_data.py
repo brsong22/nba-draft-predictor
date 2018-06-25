@@ -19,13 +19,6 @@ num_rd1_picks = list(range(1, 31))
 draft_board = {}
 prospect_stats = {}
 
-with open('[' + str(prev_year - year_i) + '] Team Draft Order and Stats.csv', 'w') as team_file:
-	team_file.write(cfg.get("Base", "Stats") + "\n")
-team_file.close()
-with open('[' + str(prev_year - year_i) + '] Drafted Player Stats.csv', 'w+') as prosp_file:
-	prosp_file.write(cfg.get("Base", "Stats") + "\n")
-prosp_file.close()
-
 parser = et.HTMLParser()
 for year_i, draft_url in enumerate(prev_draft_urls):
 	with urllib.request.urlopen(draft_url) as draft_html:
@@ -166,13 +159,14 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 									'blk': player_blk,
 									'pts': player_pts}
 		print("[[" + str(prev_year - year_i) + "]] with pick [#" + str(pick_num) + "], the [" + draft_pick_team_name + "] select [" + draft_pick_player_name + "]")
-	with open('[' + str(prev_year - year_i) + '] Team Draft Order and Stats.csv', 'a') as team_file:
+	with open('[' + str(prev_year - year_i) + '] Team Draft Order and Stats.csv', 'w+') as team_file:
 		for num, t_stats in draft_board.items():
+			team_file.write(cfg.get("Base", "Stats") + "\n")
 			team_file.write(num + ",")
 			team_file.write(",".join(list(t_stats.values())))
 			team_file.write("\n")
 	team_file.close()
-	with open('[' + str(prev_year - year_i) + '] Drafted Player Stats.csv', 'a') as prosp_file:
+	with open('[' + str(prev_year - year_i) + '] Drafted Player Stats.csv', 'w+') as prosp_file:
 		for num, p_stats in prospect_stats.items():
 			prosp_file.write(cfg.get("Base", "Stats") + "\n")
 			prosp_file.write(num + ",")
