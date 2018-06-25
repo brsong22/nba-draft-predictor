@@ -79,7 +79,7 @@ for t_key, t_values in team_draft_order.items():
 									 'blk':rank_blk,
 									 'pts':rank_pts}
 
-with open('[' + str(curr_year) + '] Draft Team Order and Stats.csv', 'w+') as team_file:
+with open('[' + str(curr_year) + '] Draft Team Order and Stats Ranking.csv', 'w+') as team_file:
 	team_file.write(cfg.get("Base", "Stats") + "\n")
 	for pick, t_info in team_draft_order.items():
 		team_file.write(pick + "," + t_info['team_name'] + ",")
