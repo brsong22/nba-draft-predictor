@@ -49,7 +49,7 @@ for t_key, t_values in team_draft_order.items():
 	team_key = t_values['team_name']
 	if not team_key in team_stat_ranks:
 		# print("obtaining " + real_abbr + "'s rankings")
-		print(team_link)
+		print("[team] getting stats for team: " + t_values['team_name'])
 		with urlopen(team_link) as r:
 			stat_rank_tree = et.parse(r, parser)
 		#use //text() because bball-ref nests a <span> for rank 1s so we need to just get the deepest child's text
@@ -79,10 +79,10 @@ for t_key, t_values in team_draft_order.items():
 									 'blk':rank_blk,
 									 'pts':rank_pts}
 
-save_name = str(curr_year) + '_Draft Team Stats Ranks.csv'
-with open(save_name, 'w+') as team_file:
+with open('[' + str(curr_year) + '] Draft Team Order and Stats.csv', 'w+') as team_file:
 	for pick, t_info in team_draft_order.items():
-		team_file.write(pick + "," + t_info['team_name'])
+		team_file.write(cfg.get("Base", "Stats") + "\n")
+		team_file.write(pick + "," + t_info['team_name'] + ",")
 		team_file.write(",".join(list(team_stat_ranks[t_info['team_name']].values())))
 		team_file.write("\n")
 team_file.close()
@@ -110,6 +110,7 @@ for p in num_prospects:
 		with urlopen(prosp_link) as l:
 			prosp_tree = et.parse(l, parser)
 			if not euro:
+				print("[us] getting stats for prospect: " + prosp_name)
 				p_3pa = prosp_tree.xpath('//*[@id="players_per_game"]/tfoot/tr/td[13]/text()')[0]
 				p_3pp = prosp_tree.xpath('//*[@id="players_per_game"]/tfoot/tr/td[14]/text()')[0]
 				p_2pa = prosp_tree.xpath('//*[@id="players_per_game"]/tfoot/tr/td[10]/text()')[0]
@@ -123,6 +124,7 @@ for p in num_prospects:
 				p_blk = prosp_tree.xpath('//*[@id="players_per_game"]/tfoot/tr/td[23]/text()')[0]
 				p_pts = prosp_tree.xpath('//*[@id="players_per_game"]/tfoot/tr/td[26]/text()')[0]
 			else:
+				print("[eu] getting stats for prospect: " + prosp_name)
 				#some euro players have a 'clubs' column. check for existence of element
 				if prosp_tree.xpath('//*[@id="per_gameEUR0"]/thead/tr/th[2]/text()'):
 					p_3pa = prosp_tree.xpath('//*[@id="per_gameEUR0"]/tfoot/tr/td[10]/text()')[0]
@@ -176,8 +178,9 @@ for p in num_prospects:
 									 'stl':'n/a',
 									 'blk':'n/a',
 									 'pts':'n/a'}
-with open(str(curr_year) + '_Draft Prospects Stats.csv', 'w+') as prosp_file:
+with open('[' + str(curr_year) + '] Draft Prospects Stats.csv', 'w+') as prosp_file:
 	for p_name, p_stats in prospects_list.items():
+		prosp_file.write(cfg.get("Base", "CurrProsp") + "\n")
 		prosp_file.write(p_name + ",")
 		prosp_file.write(",".join(list(p_stats.values())))
 		prosp_file.write("\n")

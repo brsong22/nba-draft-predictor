@@ -17,6 +17,7 @@ for i in range(5):
 num_rd1_picks = list(range(1, 31))
 
 draft_board = {}
+prospect_stats = {}
 
 parser = et.HTMLParser()
 for year_i, draft_url in enumerate(prev_draft_urls):
@@ -24,15 +25,14 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 		draft = et.parse(draft_html, parser)
 	for pick_num in num_rd1_picks:
 		#get team info
-		draft_pick_num = draft.xpath('//*[@id="stats"]/tbody/tr[' + str(pick_num) + ']/td[1]/a/text()')[0]
 		draft_pick_team_abbr = draft.xpath('//*[@id="stats"]/tbody/tr[' + str(pick_num) + ']/td[2]/a/text()')[0]
 		draft_pick_team_abbr = 'NJN' if draft_pick_team_abbr == 'BRK' else draft_pick_team_abbr
 		draft_pick_team_abbr = 'NOH' if draft_pick_team_abbr == 'NOP' else draft_pick_team_abbr
-		draft_pick_team_abbr = 'CHA' if draft_pick_team_abbr == 'CHO' else draft_pick_team_abbr #typo on the webpage
+		draft_pick_team_abbr = 'CHA' if draft_pick_team_abbr == 'CHO' else draft_pick_team_abbr #typo on the webpage?
 		draft_pick_team_abbr = 'CHA' if draft_pick_team_abbr == 'CHH' else draft_pick_team_abbr #charlotte hornets team re-name
 		draft_pick_team_name = draft.xpath('//*[@id="stats"]/tbody/tr[' + str(pick_num) + ']/td[2]/a/@title')[0]
 		team_link = nba_url + cfg.get("Teams", "TeamPath") + "/" + draft_pick_team_abbr + cfg.get("Teams", "TeamStatRanksPage")
-		print(str(prev_year - year_i) + draft_pick_team_abbr)
+		
 		with urllib.request.urlopen(team_link) as stats_html:
 			team_stats = et.parse(stats_html, parser)
 		rank_3pa = team_stats.xpath('//*[@id="stats"]/tbody/tr[' + str(year_i + 1) + ']/td[17]//text()')[0]
@@ -47,9 +47,20 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 		rank_stl = team_stats.xpath('//*[@id="stats"]/tbody/tr[' + str(year_i + 1) + ']/td[29]//text()')[0]
 		rank_blk = team_stats.xpath('//*[@id="stats"]/tbody/tr[' + str(year_i + 1) + ']/td[30]//text()')[0]
 		rank_pts = team_stats.xpath('//*[@id="stats"]/tbody/tr[' + str(year_i + 1) + ']/td[33]//text()')[0]
-
+		draft_board[str(pick_num)] = {'team': draft_pick_team_name,
+								 	  '3pa':rank_3pa,
+								 	  '3pp':rank_3pp,
+								 	  '2pa':rank_2pa,
+								 	  '2pp':rank_2pp,
+								 	  'fta':rank_fta,
+								 	  'ftp':rank_ftp,
+								 	  'orb':rank_orb,
+								 	  'drb':rank_drb,
+								 	  'ast':rank_ast,
+								 	  'stl':rank_stl,
+								 	  'blk':rank_blk,
+								 	  'pts':rank_pts}
 		#get player info
-		prospect_stats = {}
 		draft_pick_player_name = draft.xpath('//*[@id="stats"]/tbody/tr[' + str(pick_num) + ']/td[3]/a/text()')[0]
 		pick_player_ref_link = nba_url + draft.xpath('//*[@id="stats"]/tbody/tr[' + str(pick_num) + ']/td[3]/a/@href')[0]
 		with urllib.request.urlopen(pick_player_ref_link) as player_html:
@@ -73,7 +84,6 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 			with urllib.request.urlopen(player_am_link) as player_stats_html:
 				player_stats = et.parse(player_stats_html, parser)
 			if euro:
-				print("getting euro player: " + draft_pick_player_name)
 				euro_stat_columns = [7, 8, 10, 11, 13, 14, 15, 16, 18, 19, 20, 23]
 				base_num_stat_cols = 24
 				club = player_stats.xpath('//*[@id="' + cfg.get("Teams", "Club_Club") + '"]/thead/tr/th')
@@ -104,7 +114,6 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 				p_blk = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[10] + euro_extra_cols) + ']/text()')[0]
 				p_pts = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[11] + euro_extra_cols) + ']/text()')[0]
 			else:
-				print("getting usa player: " + draft_pick_player_name)
 				cbb_stat_cols = [13, 14, 10, 11, 16, 17, 18, 19, 21, 22, 23, 26]
 				if gleague:
 					cbb_stat_cols = [x-1 for x in cbb_stat_cols]
@@ -124,7 +133,6 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 				player_blk = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[10]) + ']//text()')[0]
 				player_pts = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[11]) + ']//text()')[0]
 		else:
-			print("no stats for player: " + draft_pick_player_name)
 			player_3pa = 'n/a'
 			player_3pp = 'n/a'
 			player_2pa = 'n/a'
@@ -137,23 +145,32 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 			player_stl = 'n/a'
 			player_blk = 'n/a'
 			player_pts = 'n/a'
-		prospect_stats[draft_pick_player_name] = {'3pa': player_3pa,
-												  '3pp': player_3pp,
-												  '2pa': player_2pa,
-												  '2pp': player_2pp,
-												  'fta': player_fta,
-												  'ftp': player_ftp,
-												  'orb': player_orb,
-												  'drb': player_drb,
-												  'ast': player_ast,
-												  'stl': player_stl,
-												  'blk': player_blk,
-												  'pts': player_pts}
-
-	# with open(str(prev_year - year_i) + '_Draft Prospects Stats.csv', 'w+') as prosp_file:
-	# 	for p_name, p_stats in prospect_stats.items():
-	# 		prosp_file.write(p_name + ",")
-	# 		prosp_file.write(",".join(list(p_stats.values())))
-	# 		prosp_file.write("\n")
-	# prosp_file.close()
+		prospect_stats[str(pick_num)] = {'name': draft_pick_player_name,
+									'3pa': player_3pa,
+									'3pp': player_3pp,
+									'2pa': player_2pa,
+									'2pp': player_2pp,
+									'fta': player_fta,
+									'ftp': player_ftp,
+									'orb': player_orb,
+									'drb': player_drb,
+									'ast': player_ast,
+									'stl': player_stl,
+									'blk': player_blk,
+									'pts': player_pts}
+		print("[[" + str(prev_year - year_i) + "]] with pick [#" + str(pick_num) + "], the [" + draft_pick_team_name + "] select [" + draft_pick_player_name + "]")
+	with open('[' + str(prev_year - year_i) + '] Team Draft Order and Stats.csv', 'w+') as team_file:
+		for num, t_stats in draft_board.items():
+			team_file.write(cfg.get("Base", "Stats") + "\n")
+			team_file.write(num + ",")
+			team_file.write(",".join(list(t_stats.values())))
+			team_file.write("\n")
+	team_file.close()
+	with open('[' + str(prev_year - year_i) + '] Drafted Player Stats.csv', 'w+') as prosp_file:
+		for num, p_stats in prospect_stats.items():
+			prosp_file.write(cfg.get("Base", "Stats") + "\n")
+			prosp_file.write(num + ",")
+			prosp_file.write(",".join(list(p_stats.values())))
+			prosp_file.write("\n")
+	prosp_file.close()
 
