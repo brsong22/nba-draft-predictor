@@ -80,8 +80,8 @@ for t_key, t_values in team_draft_order.items():
 									 'pts':rank_pts}
 
 with open('[' + str(curr_year) + '] Draft Team Order and Stats.csv', 'w+') as team_file:
+	team_file.write(cfg.get("Base", "Stats") + "\n")
 	for pick, t_info in team_draft_order.items():
-		team_file.write(cfg.get("Base", "Stats") + "\n")
 		team_file.write(pick + "," + t_info['team_name'] + ",")
 		team_file.write(",".join(list(team_stat_ranks[t_info['team_name']].values())))
 		team_file.write("\n")
@@ -179,8 +179,8 @@ for p in num_prospects:
 									 'blk':'n/a',
 									 'pts':'n/a'}
 with open('[' + str(curr_year) + '] Draft Prospects Stats.csv', 'w+') as prosp_file:
+	prosp_file.write(cfg.get("Base", "CurrProsp") + "\n")
 	for p_name, p_stats in prospects_list.items():
-		prosp_file.write(cfg.get("Base", "CurrProsp") + "\n")
 		prosp_file.write(p_name + ",")
 		prosp_file.write(",".join(list(p_stats.values())))
 		prosp_file.write("\n")
