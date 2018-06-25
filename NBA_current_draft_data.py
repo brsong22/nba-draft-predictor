@@ -35,7 +35,9 @@ for pick_num in num_rd1_picks:
 	team_draft_order[str(pick_num)] = {'team_name':team, 'team_link':team_link}
 
 team_ranks_url = cfg.get("Teams", "TeamStatRanksPage")
+team_stat_totals_url = cfg.get("Teams", "TeamStatsPage")
 team_stat_ranks = {}
+team_stat_totals = {}
 #3pa:18, 3p%:19, 2pa:21, 2p%:22, fta:24, ft%:25, orb:26, drb:27, ast:29, stl:30, blk:31, pts:34
 # print("getting team season rankings")
 for t_key, t_values in team_draft_order.items():
@@ -45,11 +47,12 @@ for t_key, t_values in team_draft_order.items():
 	team_abbr = 'NJN' if team_info[2] == 'BRK' else team_info[2]
 	team_abbr = 'NOH' if team_info[2] == 'NOP' else team_abbr
 	team_path = "/" + team_info[1] + "/" + team_abbr
-	team_link = nba_url + team_path + team_ranks_url
 	team_key = t_values['team_name']
 	if not team_key in team_stat_ranks:
 		# print("obtaining " + real_abbr + "'s rankings")
 		print("[team] getting stats for team: " + t_values['team_name'])
+
+		team_link = nba_url + team_path + team_ranks_url
 		with urlopen(team_link) as r:
 			stat_rank_tree = et.parse(r, parser)
 		#use //text() because bball-ref nests a <span> for rank 1s so we need to just get the deepest child's text
@@ -79,6 +82,33 @@ for t_key, t_values in team_draft_order.items():
 									 'blk':rank_blk,
 									 'pts':rank_pts}
 
+		team_total_stats_url = nba_url + team_path + team_stat_totals_url
+		with urlopen(team_total_stats_url) as totals_html:
+			team_totals = et.parse(totals_html, parser)
+		total_3pa = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[17]//text()')[0]
+		total_3pp = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[18]//text()')[0]
+		total_2pa = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[20]//text()')[0]
+		total_2pp = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[21]//text()')[0]
+		total_fta = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[23]//text()')[0]
+		total_ftp = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[24]//text()')[0]
+		total_orb = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[25]//text()')[0]
+		total_drb = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[26]//text()')[0]
+		total_ast = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[28]//text()')[0]
+		total_stl = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[29]//text()')[0]
+		total_blk = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[30]//text()')[0]
+		total_pts = team_totals.xpath('//*[@id="stats"]/tbody/tr[1]/td[33]//text()')[0]
+		team_stat_totals[team_key] = {'3pa': total_3pa,
+								 	  '3pp': total_3pp,
+								 	  '2pa': total_2pa,
+								 	  '2pp': total_2pp,
+								 	  'fta': total_fta,
+								 	  'ftp': total_ftp,
+								 	  'orb': total_orb,
+								 	  'drb': total_drb,
+								 	  'ast': total_ast,
+								 	  'stl': total_stl,
+								 	  'blk': total_blk,
+								 	  'pts': total_pts}
 with open('[' + str(curr_year) + '] Draft Team Order and Stats Ranking.csv', 'w+') as team_file:
 	team_file.write(cfg.get("Base", "Stats") + "\n")
 	for pick, t_info in team_draft_order.items():
@@ -86,8 +116,13 @@ with open('[' + str(curr_year) + '] Draft Team Order and Stats Ranking.csv', 'w+
 		team_file.write(",".join(list(team_stat_ranks[t_info['team_name']].values())))
 		team_file.write("\n")
 team_file.close()
-
-# #end draft team ranks loop
+with open('[' + str(curr_year) + '] Draft Team Order and Stats Totals.csv', 'w+') as stats_file:
+	stats_file.write(cfg.get("Base", "Stats") + "\n")
+	for pick, t_info in team_draft_order.items():
+		stats_file.write(pick + "," + t_info['team_name'] + ",")
+		stats_file.write(",".join(list(team_stat_totals[t_info['team_name']].values())))
+		stats_file.write("\n")
+stats_file.close()
 
 #prospect pre-nba stats
 prospects_list = {}
