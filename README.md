@@ -18,8 +18,10 @@ they will target prospects with strong 3 point shooting abilities.
 
 Team per game stats as well as the team's league ranking for the stats were gathered.
 
-Stats were gathered for each top prospect listed on [basketball-reference's](https://www.basketball-reference.com/) 
+Draft order and team stats were gathered for each team on [basketball-reference's](https://www.basketball-reference.com/) 
 draft preview for the upcoming draft.
+
+Prospect stats for college, overseas, and amateur (g-league) were collected from [sports-reference](https://www.sports-reference.com/) for each player listed by basketball-reference's draft report.
 
 Stats were gathered for each player drafted in the first round on basketball-reference's pages for past drafts.
 ###### Basketball stats:
