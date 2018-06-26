@@ -23,6 +23,9 @@ draft preview for the upcoming draft.
 
 Prospect stats for college, overseas, and amateur (g-league) were collected from [sports-reference](https://www.sports-reference.com/) for each player listed by basketball-reference's draft report.
 
+***Update***: because of the considerations listed at the end, I will also generate player rankings among prospects in order to
+determine if there is simply a pattern of drafting the overall best players first due to the real world situation of teams trading.
+
 Stats were gathered for each player drafted in the first round on basketball-reference's pages for past drafts.
 ###### Basketball stats:
 - 3 point attempts
