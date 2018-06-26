@@ -51,6 +51,7 @@ with open('[2017] Drafted Player Stats.csv', newline='') as player_totals_file:
 pct_stats = ['3pp', '2pp', 'ftp']
 vol_stats = ['3pa', '2pa', 'fta', 'orb', 'drb', 'ast', 'stl', 'blk']
 
+
 team_pct_totals = [float(team_stat_totals[str(1)].get(x))*100 for x in pct_stats]
 print(team_pct_totals)
 team_vol_totals = [float(team_stat_totals[str(1)].get(x))*100 for x in vol_stats]
@@ -61,12 +62,18 @@ player_vol_totals = [float(player_stat_totals[str(1)].get(x))*100 for x in vol_s
 
 x_ind = np.arange(len(pct_stats))
 y_ind = np.arange(0, 101, 10)
-team_pct_graph = plt.bar(x_ind, team_pct_totals, width=-.25, align='edge', color='b', edgecolor='black')
-player_pct_graph = plt.bar(x_ind, player_pct_totals, width=.25, align='edge', color='r', edgecolor='black')
-
-plt.ylabel('Percent (%)')
-plt.title('Shot percentage by Team and Drafted Player')
-plt.xticks(x_ind, pct_stats)
-plt.yticks(y_ind)
-plt.legend((team_pct_graph[0], player_pct_graph[0]), (team_stat_totals['1'].get('name'), player_stat_totals['1'].get('name')))
+fig, ax = plt.subplots()
+team_pct_graph = ax.bar(x_ind, team_pct_totals, width=-.25, align='edge', color='b', edgecolor='black')
+for i, val in enumerate(team_pct_totals):
+	ax.text(i-.21, val+2, str(val), color='black', va='center', fontweight='bold')
+player_pct_graph= ax.bar(x_ind, player_pct_totals, width=.25, align='edge', color='r', edgecolor='black')
+for i, val in enumerate(player_pct_totals):
+	ax.text(i+.05, val+2, str(val), color='black', va='center', fontweight='bold')
+ax.set_title('Shot percentage by Team and Drafted Player')
+ax.set_xlabel('Stat Category')
+ax.set_ylabel('Percent (%)')
+ax.set_xticks(x_ind)
+ax.set_xticklabels(pct_stats)
+ax.set_yticks(y_ind)
+ax.legend((team_pct_graph[0], player_pct_graph[0]), (team_stat_totals['1'].get('name'), player_stat_totals['1'].get('name')))
 plt.show()
