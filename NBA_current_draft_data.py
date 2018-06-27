@@ -201,18 +201,18 @@ for p in num_prospects:
 									 'blk':p_blk,
 									 'pts':p_pts}
 	else:
-		prospects_list[prosp_name] = {'3pa':'n/a',
-									 '3pp':'n/a',
-									 '2pa':'n/a',
-									 '2pp':'n/a',
-									 'fta':'n/a',
-									 'ftp':'n/a',
-									 'orb':'n/a',
-									 'drb':'n/a',
-									 'ast':'n/a',
-									 'stl':'n/a',
-									 'blk':'n/a',
-									 'pts':'n/a'}
+		prospects_list[prosp_name] = {'3pa':'nan',
+									 '3pp':'nan',
+									 '2pa':'nan',
+									 '2pp':'nan',
+									 'fta':'nan',
+									 'ftp':'nan',
+									 'orb':'nan',
+									 'drb':'nan',
+									 'ast':'nan',
+									 'stl':'nan',
+									 'blk':'nan',
+									 'pts':'nan'}
 with open('[' + str(curr_year) + '] Draft Prospects Stats.csv', 'w+') as prosp_file:
 	prosp_file.write(cfg.get("Base", "CurrProsp") + "\n")
 	for p_name, p_stats in prospects_list.items():

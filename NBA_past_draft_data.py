@@ -112,6 +112,7 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 		else:
 			player_am_link = ""
 		if not player_am_link == "":
+			print(player_am_link)
 			with urllib.request.urlopen(player_am_link) as player_stats_html:
 				player_stats = et.parse(player_stats_html, parser)
 			if euro:
@@ -133,7 +134,7 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 				if(float(p_3pa) > 0):
 					p_3pp = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[1] + euro_extra_cols) + ']/text()')[0]
 				else:
-					p_3pp = 'n/a'
+					p_3pp = 'nan'
 				p_2pa = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[2] + euro_extra_cols) + ']/text()')[0]
 				p_2pp = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[3] + euro_extra_cols) + ']/text()')[0]
 				p_fta = player_stats.xpath('//*[@id="' + tbl_id + '"]/tfoot/tr/td[' + str(euro_stat_columns[4] + euro_extra_cols) + ']/text()')[0]
@@ -152,7 +153,7 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 				if(float(player_3pa) > 0):
 					player_3pp = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[1])+ ']//text()')[0]
 				else:
-					player_3pp = 'n/a'
+					player_3pp = 'nan'
 				player_2pa = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[2])+ ']//text()')[0]
 				player_2pp = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[3])+ ']//text()')[0]
 				player_fta = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[4])+ ']//text()')[0]
@@ -164,18 +165,18 @@ for year_i, draft_url in enumerate(prev_draft_urls):
 				player_blk = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[10]) + ']//text()')[0]
 				player_pts = player_stats.xpath('//*[@id="' + minor_team + '"]/tfoot/tr/td[' + str(cbb_stat_cols[11]) + ']//text()')[0]
 		else:
-			player_3pa = 'n/a'
-			player_3pp = 'n/a'
-			player_2pa = 'n/a'
-			player_2pp = 'n/a'
-			player_fta = 'n/a'
-			player_ftp = 'n/a'
-			player_orb = 'n/a'
-			player_drb = 'n/a'
-			player_ast = 'n/a'
-			player_stl = 'n/a'
-			player_blk = 'n/a'
-			player_pts = 'n/a'
+			player_3pa = 'nan'
+			player_3pp = 'nan'
+			player_2pa = 'nan'
+			player_2pp = 'nan'
+			player_fta = 'nan'
+			player_ftp = 'nan'
+			player_orb = 'nan'
+			player_drb = 'nan'
+			player_ast = 'nan'
+			player_stl = 'nan'
+			player_blk = 'nan'
+			player_pts = 'nan'
 		prospect_stats[str(pick_num)] = {'name': draft_pick_player_name,
 									'3pa': player_3pa,
 									'3pp': player_3pp,
