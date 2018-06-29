@@ -68,18 +68,46 @@ rank_by_rating.sort(key=lambda tup: float(tup[0]))
 
 
 fig, ax = plt.subplots(figsize=(10, 5))
-
-x_ind = np.arange(len(rank_by_rating))
+# ax.grid(color='grey', linestyle='-', linewidth='.5')
+x_ind = np.arange(len(rank_by_rating)+1)
+print(x_ind)
 y_ind = np.arange(np.floor(float(min(rank_by_rating, key=lambda tup: float(tup[2]))[2]))-3, np.floor(float(max(rank_by_rating, key=lambda tup: float(tup[2]))[2]))+3, 1)
 print(y_ind)
-ax.bar(x_ind, [int(round(float(x[2]))) for x in rank_by_rating], width=1, align='center', color='r', edgecolor='black', label='Rating')
+bar_chart = ax.bar([x[0] for x in rank_by_rating], [int(round(float(x[2]))) for x in rank_by_rating], width=1, color='r', edgecolor='black', label='Rating')
 # for i, t in enumerate(rank_by_rating):
 # 	pct.text(i-.21, val+2, str(val), color='black', va='center', fontweight='bold')
+annotations = ax.annotate("", xy=(0,0), xytext=(-20,20), textcoords="offset points",
+						  bbox=dict(boxstyle="square", fc="white", ec="black", lw=2),
+						  arrowprops=dict(arrowstyle="-"))
+annotations.set_visible(False)
 
+def update_annotation(bar):
+	x = bar.get_x()+bar.get_width()/2
+	print(x)
+	y = bar.get_y()+bar.get_height()
+	annotations.xy = (x,y)
+	text = "name:{}\nrating:{:.2f}".format(rank_by_rating[int(x)][1], float(rank_by_rating[int(x)][2]))
+	annotations.set_text(text)
+	annotations.get_bbox_patch().set_alpha(1)
+
+def hover(event):
+	visible = annotations.get_visible()
+	if event.inaxes == ax:
+		for bar in bar_chart:
+			container, index = bar.contains(event)
+			if container:
+				update_annotation(bar)
+				annotations.set_visible(True)
+				fig.canvas.draw_idle()
+				return
+	if visible:
+		annotations.set_visible(False)
+		fig.canvas.draw_idle()
+fig.canvas.mpl_connect("motion_notify_event", hover)
 ax.set_title('Rating of Drafted Players')
 ax.set_xlabel('Pick Number')
 ax.set_ylabel('Rating')
-ax.set_xticks(x_ind)
+# ax.set_xticks([1+x for x in x_ind])
 ax.set_xticklabels([x[0] for x in rank_by_rating])
 ax.legend()
 plt.show()
